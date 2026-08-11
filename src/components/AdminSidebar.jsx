@@ -257,8 +257,14 @@ export default function AdminSidebar() {
           <div
             className="admin-sidebar-brand flex h-20 shrink-0 items-center overflow-hidden border-b border-border/60 bg-gradient-to-br from-accent/5 to-transparent px-6"
           >
-            <div className="flex items-center gap-3 min-w-max">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground shadow-lg shadow-accent/20">
+            <a
+              href="https://www.muhyotech.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 min-w-max group/brand"
+              title="Open Live Portfolio Website (muhyotech.com)"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground shadow-lg shadow-accent/20 group-hover/brand:scale-105 transition-transform">
                 <Zap className="h-6 w-6" />
               </div>
               {!isCollapsed && (
@@ -267,15 +273,15 @@ export default function AdminSidebar() {
                   animate={{ opacity: 1, x: 0 }}
                   className="flex flex-col"
                 >
-                  <span className="text-sm font-black uppercase italic leading-none tracking-widest text-foreground">
+                  <span className="text-sm font-black uppercase italic leading-none tracking-widest text-foreground group-hover/brand:text-accent transition-colors flex items-center gap-1">
                     MUHYO
                   </span>
                   <span className="text-[8px] font-bold text-muted-foreground tracking-[0.3em] uppercase leading-none mt-1">
-                    Control Center
+                    Live Website ↗
                   </span>
                 </motion.div>
               )}
-            </div>
+            </a>
 
             {/* Mobile Close Button */}
             {isMobile && (

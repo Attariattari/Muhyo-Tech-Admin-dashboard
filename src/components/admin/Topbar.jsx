@@ -162,14 +162,16 @@ export default function Topbar() {
           >
             {theme === "light" ? <Moon className="w-5 h-5 text-indigo-400" /> : <Sun className="w-5 h-5 text-amber-400" />}
           </button>
-          <Link
-            href="/"
+          <a
+            href="https://www.muhyotech.com"
             target="_blank"
+            rel="noopener noreferrer"
             className="p-2.5 hover:bg-muted/60 rounded-xl text-muted-foreground hover:text-accent transition-all flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
+            title="Open Live Portfolio Website (muhyotech.com)"
           >
-            <ExternalLink className="w-4 h-4" />
-            <span className="hidden lg:inline">Live Site</span>
-          </Link>
+            <ExternalLink className="w-4 h-4 text-accent" />
+            <span className="hidden lg:inline font-black">Live Site</span>
+          </a>
         </div>
 
         <div className="relative" ref={dropdownRef}>
