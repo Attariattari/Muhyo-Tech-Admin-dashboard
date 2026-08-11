@@ -1,0 +1,72 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import { ImageIcon, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { getSafeImageSrc } from "@/lib/images/getSafeImageSrc";
+import { ensureMuhyoTechAlt } from "@/lib/mediaAlt";
+
+function SmartImageContent({
+  src,
+  alt,
+  className,
+  fallbackSrc = "/logo.webp",
+  priority = false,
+  ...props
+}) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState(getSafeImageSrc(src, fallbackSrc));
+
+  const handleError = () => {
+    if (!error) {
+      setError(true);
+      setCurrentSrc(getSafeImageSrc(fallbackSrc));
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className={cn("relative overflow-hidden bg-muted/50", className)}>
+      {/* Loading Skeleton */}
+      {isLoading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-muted animate-pulse">
+          <div className="w-full h-full bg-gradient-to-r from-transparent via-foreground/5 to-transparent skew-x-[-20deg] animate-[shimmer_2s_infinite]" />
+        </div>
+      )}
+
+      {/* Error State Icon (Subtle) */}
+      {error && (
+        <div className="absolute inset-0 z-0 flex items-center justify-center bg-muted/80">
+          <ImageIcon className="w-8 h-8 text-muted-foreground opacity-20" />
+        </div>
+      )}
+
+      <Image
+        src={getSafeImageSrc(currentSrc, fallbackSrc)}
+        alt={ensureMuhyoTechAlt(alt, "website media")}
+        className={cn(
+          "object-cover transition-all duration-700 ease-in-out",
+          isLoading ? "scale-110 blur-xl grayscale" : "scale-100 blur-0 grayscale-0",
+          error ? "opacity-40" : "opacity-100"
+        )}
+        onLoad={() => setIsLoading(false)}
+        onError={handleError}
+        priority={priority}
+        fill
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        {...props}
+      />
+    </div>
+  );
+}
+
+export default function SmartImage(props) {
+  return (
+    <SmartImageContent
+      key={`${props.src || ""}|${props.fallbackSrc || "/logo.webp"}`}
+      {...props}
+    />
+  );
+}

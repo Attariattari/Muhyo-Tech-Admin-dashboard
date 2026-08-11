@@ -1,0 +1,99 @@
+import mongoose from 'mongoose';
+
+const UserSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true, lowercase: true },
+  name: { type: String },
+  passkey: { type: String },
+  role: { type: String, enum: ['user', 'admin', 'super-admin', 'root-super-admin'], default: 'user' },
+  status: { type: String, enum: ['pending', 'approved', 'denied', 'removed', 'restricted'], default: 'pending' },
+  permissions: { type: Object, default: {} },
+  accessRestriction: {
+    reason: { type: String },
+    restrictedAt: { type: Date },
+    restrictedBy: { type: String, lowercase: true },
+  },
+  accessAppeal: {
+    message: { type: String, maxlength: 1500 },
+    status: { type: String, enum: ['pending', 'approved', 'rejected'] },
+    submittedAt: { type: Date },
+    reviewedAt: { type: Date },
+    reviewedBy: { type: String, lowercase: true },
+  },
+  authProviders: [{
+    provider: { type: String, enum: ['credentials', 'google'], required: true },
+    providerId: { type: String },
+    email: { type: String, lowercase: true },
+    linkedAt: { type: Date, default: Date.now },
+  }],
+  googleId: { type: String, index: true, sparse: true },
+  avatar: { type: String },
+  emailVerified: { type: Boolean, default: false },
+  provider: { type: String, enum: ['credentials', 'google'], default: 'credentials' },
+  lastLoginAt: { type: Date },
+  isOAuthUser: { type: Boolean, default: false },
+  
+  // ===== PASSWORD RESET SYSTEM (Enterprise-Grade) =====
+  // Password reset token for secure credential changes
+  passwordResetToken: { type: String, index: true }, // JWT token hash
+  passwordResetExpires: { type: Date, index: true }, // Token expiration
+  passwordResetUsed: { type: Boolean, default: false }, // One-time use validation
+  
+  // Password change audit trail
+  lastPasswordChangedAt: { type: Date }, // When passkey was last changed
+  passwordChangedBy: { type: String }, // Email/source of password change ('admin_transfer', 'user_initiated', etc.)
+  passwordChangeReason: { type: String }, // Reason for change
+  
+  // Session security
+  passwordChangeInvalidatesSessionsBefore: { type: Date }, // All older sessions are invalid
+  
+  createdAt: { type: Date, default: Date.now },
+  lastActive: { type: Date, default: Date.now },
+}, { strict: false }); // CRITICAL: Allows saving fields even if schema is slightly stale in memory
+
+export default mongoose.models.User || mongoose.model('User', UserSchema);
+
+// Notification Model
+const NotificationSchema = new mongoose.Schema({
+  type: { type: String, required: true },
+  title: { type: String, required: true },
+  message: { type: String, required: true },
+  status: { type: String, enum: ['unread', 'read', 'approved', 'denied'], default: 'unread' },
+  relatedUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  createdAt: { type: Date, default: Date.now },
+});
+
+export const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
+
+// PendingCode Model
+const PendingCodeSchema = new mongoose.Schema({
+  email: { type: String, required: true, lowercase: true },
+  code: { type: String, required: true },
+  type: { type: String, default: 'setup' },
+  expiry: { type: Date, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
+// TTL Index to auto-delete expired codes
+PendingCodeSchema.index({ expiry: 1 }, { expireAfterSeconds: 0 });
+
+export const PendingCode = mongoose.models.PendingCode || mongoose.model('PendingCode', PendingCodeSchema);
+
+const GoogleOAuthLinkRequestSchema = new mongoose.Schema({
+  tokenHash: { type: String, required: true, unique: true, index: true },
+  email: { type: String, required: true, lowercase: true, index: true },
+  googleId: { type: String, required: true },
+  googleEmail: { type: String, required: true, lowercase: true },
+  name: { type: String },
+  avatar: { type: String },
+  callbackUrl: { type: String, default: "/admin/dashboard" },
+  status: { type: String, enum: ['pending', 'used', 'expired'], default: 'pending' },
+  expiresAt: { type: Date, required: true },
+  createdAt: { type: Date, default: Date.now },
+  usedAt: { type: Date },
+}, { strict: true });
+
+GoogleOAuthLinkRequestSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+export const GoogleOAuthLinkRequest =
+  mongoose.models.GoogleOAuthLinkRequest ||
+  mongoose.model('GoogleOAuthLinkRequest', GoogleOAuthLinkRequestSchema);

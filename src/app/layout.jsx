@@ -1,0 +1,120 @@
+import { Inter } from "next/font/google";
+import "@/app/globals.css";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import ScrollToTop from "@/components/ScrollToTop";
+import DeferredToaster from "@/components/DeferredToaster";
+import { OrganizationSchema } from "@/components/schema/OrganizationSchema";
+import { SITE_URL } from "@/lib/config";
+import { getSeoImage } from "@/lib/seo";
+import PublicAnalytics from "@/components/PublicAnalytics";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  adjustFontFallback: true,
+});
+
+const enableVercelAnalytics =
+  process.env.NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS === "true";
+const configuredGoogleAnalyticsId = process.env.NEXT_PUBLIC_GA_ID || "";
+const googleAnalyticsId = /^G-[A-Z0-9]+$/.test(configuredGoogleAnalyticsId)
+  ? configuredGoogleAnalyticsId
+  : "";
+
+export const viewport = {
+  themeColor: "#000000",
+  colorScheme: "light dark",
+};
+
+export const metadata = {
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Muhyo Tech — Admin Console Dashboard",
+    template: "%s | Muhyo Tech Admin",
+  },
+  description:
+    "Muhyo Tech Admin Console — Management system for blogs, services, projects, users, resume, and AI automation.",
+  icons: {
+    icon: [
+      { url: "/logo.png", type: "image/png" },
+      { url: "/logo.webp", type: "image/webp" },
+    ],
+    shortcut: [{ url: "/logo.png", type: "image/png" }],
+    apple: [{ url: "/logo.png", type: "image/png" }],
+  },
+  openGraph: {
+    title: "Muhyo Tech — Admin Console Dashboard",
+    description:
+      "Muhyo Tech Admin Console — Management system for blogs, services, projects, users, resume, and AI automation.",
+    url: SITE_URL,
+    siteName: "Muhyo Tech Admin",
+    images: [
+      {
+        url: getSeoImage("/logo.png"),
+        width: 640,
+        height: 640,
+        alt: "Muhyo Tech Admin Logo",
+      },
+    ],
+    type: "website",
+  },
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/logo.png" type="image/png" />
+        <link rel="shortcut icon" href="/logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/logo.png" type="image/png" />
+        <OrganizationSchema />
+        <link rel="dns-prefetch" href="//res.cloudinary.com" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const preferredTheme = localStorage.getItem('muhyo_theme_preference');
+                  const savedTheme = localStorage.getItem('muhyo_global_theme');
+                  const initialTheme = ['light', 'dark', 'black'].includes(preferredTheme)
+                    ? preferredTheme
+                    : savedTheme;
+                  const theme = ['light', 'dark', 'black'].includes(initialTheme)
+                    ? initialTheme
+                    : 'black';
+                  const root = document.documentElement;
+                  root.classList.remove('light', 'dark', 'black');
+                  if (theme === 'black') {
+                    root.classList.add('dark', 'black');
+                  } else {
+                    root.classList.add(theme);
+                  }
+                  root.dataset.theme = theme;
+                  root.style.colorScheme = theme === 'light' ? 'light' : 'dark';
+                  localStorage.setItem('muhyo_global_theme', theme);
+                  localStorage.removeItem('theme');
+
+                  const isSidebarCollapsed = localStorage.getItem('muhyo:sidebar-collapsed') === 'true';
+                  document.documentElement.classList.toggle('sidebar-collapsed', isSidebarCollapsed);
+                  document.documentElement.classList.toggle('sidebar-expanded', !isSidebarCollapsed);
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className={inter.className} suppressHydrationWarning>
+        <PublicAnalytics
+          enableVercelAnalytics={enableVercelAnalytics}
+          googleAnalyticsId={googleAnalyticsId}
+        />
+        <ThemeProvider>
+          <ScrollToTop />
+          {children}
+          <DeferredToaster />
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
+
