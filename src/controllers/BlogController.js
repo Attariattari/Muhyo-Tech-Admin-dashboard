@@ -13,6 +13,7 @@ import {
 import { revalidatePath } from "next/cache";
 import { isLegacyBlogSlug, normalizeBlogServiceLinks } from "@/lib/blogSeo";
 import { scheduleInternalLinkAudit } from "@/lib/ai/blog/internalLinkingEngine";
+import { triggerBloggerPublishIfReady } from "@/lib/ai/blog/bloggerAutomationHook";
 
 const isPublicBlog = (blog = {}) => {
     const status = blog.publishStatus ?? blog.status ?? "published";
@@ -331,6 +332,13 @@ export const BlogController = {
                 title: updated.title,
             });
             await scheduleInternalLinkAudit(updated.publishStatus === "published" ? updated._id : null);
+
+            // Safe trigger for Google Blogger supporting post publish check when image is resolved
+            if (updated.image || updated.featuredImage?.url) {
+                triggerBloggerPublishIfReady(updated._id).catch((err) =>
+                    console.error("[Blogger Hook Update Trigger Failure]:", err.message)
+                );
+            }
 
             emitSocketEvent(SOCKET_EVENTS.STATS_UPDATED);
             await cacheManager.invalidateByTag("blogs");
