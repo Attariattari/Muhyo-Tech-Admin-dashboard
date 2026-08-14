@@ -91,7 +91,39 @@ async function runBloggerQualityReview(blogData) {
   }
 }
 
+function repairTruncatedJson(rawText) {
+  const cleaned = rawText
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (initialError) {
+    console.warn("[Blogger Generator] Standard JSON parse failed, attempting auto-repair...");
+    try {
+      let repaired = cleaned.replace(/\\+$/, "").replace(/,\s*$/, "");
+
+      // Count unescaped double quotes
+      const quoteMatches = repaired.match(/(?<!\\)"/g) || [];
+      if (quoteMatches.length % 2 !== 0) {
+        repaired += '"';
+      }
+
+      // Close open object brace
+      if (!repaired.trim().endsWith("}")) {
+        repaired += "\n}";
+      }
+
+      return JSON.parse(repaired);
+    } catch (repairError) {
+      throw new Error(`AI response truncated: ${initialError.message}`);
+    }
+  }
+}
+
 export async function generateBloggerSupportingBlog(parentBlogId, options = {}) {
+  let reservedPost = null;
   try {
     await dbConnect();
 
@@ -103,6 +135,73 @@ export async function generateBloggerSupportingBlog(parentBlogId, options = {}) 
     const liveBaseUrl = getBloggerLiveBaseUrl();
     const parentUrl = sanitizeBloggerUrl(`${liveBaseUrl}/blog/${parentBlog.slug}`);
 
+    // 🔒 1. PRE-CHECK: If a Blogger post already exists for this parent blog
+    const existingPost = await BloggerPost.findOne({ parentBlogId: parentBlog._id });
+    if (existingPost) {
+      // If it is in active 'generating' status, check if lock is fresh (< 5 mins)
+      if (existingPost.publishStatus === "generating") {
+        const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000);
+        if (existingPost.updatedAt && existingPost.updatedAt < fiveMinsAgo) {
+          console.warn(`[Blogger Generator] Found stale 'generating' lock for parent ${parentBlogId}. Re-acquiring lock.`);
+          reservedPost = existingPost;
+        } else {
+          console.log(`[Blogger Generator] 🔒 Generation currently in progress for parent "${parentBlog.title}". Skipping duplicate execution.`);
+          return {
+            success: true,
+            alreadyExists: true,
+            bloggerPost: existingPost,
+            message: "Generation is already in progress by another process.",
+          };
+        }
+      } else {
+        console.log(`[Blogger Generator] 🛑 Supporting post ALREADY exists for parent "${parentBlog.title}" (Status: ${existingPost.publishStatus}, ID: ${existingPost._id}). Duplicate generation blocked.`);
+        return {
+          success: true,
+          alreadyExists: true,
+          bloggerPost: existingPost,
+          message: `Blogger post already exists for this parent blog with status: ${existingPost.publishStatus}`,
+        };
+      }
+    }
+
+    // 🔒 2. ATOMIC DB RESERVATION LOCK:
+    // Create or update a placeholder document with status "generating" before invoking Gemini AI.
+    // In multi-Vercel environments, if 2 workers run concurrently, the unique index on parentBlogId will reject the 2nd worker at DB level.
+    if (!reservedPost) {
+      try {
+        reservedPost = await BloggerPost.create({
+          title: `[Generating] Supporting Post for ${parentBlog.title}`,
+          slug: `generating-${parentBlog._id}-${Date.now()}`,
+          content: "<p>AI content generation in progress...</p>",
+          summary: "Generating AI content for Blogger...",
+          tags: ["Technology"],
+          parentBlogId: parentBlog._id,
+          parentBlogTitle: parentBlog.title,
+          parentBlogSlug: parentBlog.slug,
+          parentBlogUrl: parentUrl,
+          publishStatus: "generating",
+          aiGenerated: true,
+        });
+        console.log(`[Blogger Generator] 🔒 Atomic lock acquired for parent "${parentBlog.title}" (Reservation ID: ${reservedPost._id})`);
+      } catch (dbErr) {
+        if (dbErr.code === 11000 || dbErr.message?.includes("duplicate key")) {
+          console.log(`[Blogger Generator] 🔒 Atomic DB Lock caught duplicate creation attempt for parent "${parentBlog.title}". Returning existing post.`);
+          const existing = await BloggerPost.findOne({ parentBlogId: parentBlog._id });
+          return {
+            success: true,
+            alreadyExists: true,
+            bloggerPost: existing,
+            message: "Duplicate generation attempt blocked by atomic database lock.",
+          };
+        }
+        throw dbErr;
+      }
+    } else {
+      reservedPost.publishStatus = "generating";
+      reservedPost.title = `[Generating] Supporting Post for ${parentBlog.title}`;
+      await reservedPost.save();
+    }
+
     console.log(`[Blogger Generator] Generating supporting post for parent: "${parentBlog.title}"...`);
 
     let retryCount = 0;
@@ -110,32 +209,40 @@ export async function generateBloggerSupportingBlog(parentBlogId, options = {}) 
     let qcReview = null;
 
     while (retryCount < 3) {
-      const promptText = SUPPORTING_EDITORIAL_PROMPT
-        .replace(/{{PARENT_TITLE}}/g, parentBlog.title)
-        .replace(/{{PARENT_SUMMARY}}/g, parentBlog.summary || "")
-        .replace(/{{PARENT_URL}}/g, parentUrl);
+      try {
+        const promptText = SUPPORTING_EDITORIAL_PROMPT
+          .replace(/{{PARENT_TITLE}}/g, parentBlog.title)
+          .replace(/{{PARENT_SUMMARY}}/g, parentBlog.summary || "")
+          .replace(/{{PARENT_URL}}/g, parentUrl);
 
-      const rawResponse = await generateGeminiResponse(promptText, {
-        temperature: 0.7,
-        responseMimeType: "application/json",
-      });
+        const rawResponse = await generateGeminiResponse(promptText, {
+          temperature: 0.7,
+          maxOutputTokens: 8192,
+          responseMimeType: "application/json",
+        });
 
-      const cleanedJson = rawResponse
-        .replace(/```json/gi, "")
-        .replace(/```/g, "")
-        .trim();
+        blogData = repairTruncatedJson(rawResponse);
 
-      blogData = JSON.parse(cleanedJson);
+        if (!blogData.title || !blogData.content) {
+          throw new Error("Parsed JSON missing essential title or content fields.");
+        }
 
-      // Run QC Audit (Reusing existing QC criteria: score >= 8.0)
-      qcReview = await runBloggerQualityReview(blogData);
-      console.log(`[Blogger QC] Attempt #${retryCount + 1} Score: ${qcReview.score}/10 | Passed: ${qcReview.passed}`);
+        // Run QC Audit (Reusing existing QC criteria: score >= 8.0)
+        qcReview = await runBloggerQualityReview(blogData);
+        console.log(`[Blogger QC] Attempt #${retryCount + 1} Score: ${qcReview.score}/10 | Passed: ${qcReview.passed}`);
 
-      if (qcReview.passed && qcReview.score >= 8.0) {
-        break;
+        if (qcReview.passed && qcReview.score >= 8.0) {
+          break;
+        }
+      } catch (attemptError) {
+        console.warn(`[Blogger Generator] Attempt #${retryCount + 1} failed: ${attemptError.message}`);
       }
 
       retryCount++;
+    }
+
+    if (!blogData || !blogData.content) {
+      throw new Error("Failed to generate a valid supporting blog post after 3 attempts due to response truncation. Please try again.");
     }
 
     let finalContent = sanitizeBloggerContentLinks(blogData.content);
@@ -157,36 +264,35 @@ export async function generateBloggerSupportingBlog(parentBlogId, options = {}) 
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
 
-    // Create & Save BloggerPost in MongoDB
-    const newBloggerPost = new BloggerPost({
-      title: blogData.title,
-      slug: slug,
-      content: finalContent,
-      summary: blogData.summary,
-      tags: blogData.tags || ["Technology", "Engineering"],
+    // Finalize the reserved BloggerPost document in MongoDB
+    reservedPost.title = blogData.title;
+    reservedPost.slug = slug;
+    reservedPost.content = finalContent;
+    reservedPost.summary = blogData.summary;
+    reservedPost.tags = blogData.tags || ["Technology", "Engineering"];
+    reservedPost.qualityStatus = qcReview.passed ? "passed" : "rejected";
+    reservedPost.qualityScore = qcReview.score || 8.0;
+    reservedPost.qualityFeedback = qcReview.feedback || "";
+    reservedPost.publishStatus = "pending_review";
+    reservedPost.aiGenerated = true;
 
-      parentBlogId: parentBlog._id,
-      parentBlogTitle: parentBlog.title,
-      parentBlogSlug: parentBlog.slug,
-      parentBlogUrl: parentUrl,
-
-      qualityStatus: qcReview.passed ? "passed" : "rejected",
-      qualityScore: qcReview.score || 8.0,
-      qualityFeedback: qcReview.feedback || "",
-
-      publishStatus: "pending_review",
-      aiGenerated: true,
-    });
-
-    await newBloggerPost.save();
-    console.log(`[Blogger Generator] Saved new supporting post: ${newBloggerPost._id}`);
+    await reservedPost.save();
+    console.log(`[Blogger Generator] ✅ Successfully saved supporting post: ${reservedPost._id}`);
 
     return {
       success: true,
-      bloggerPost: newBloggerPost,
+      bloggerPost: reservedPost,
     };
   } catch (error) {
     console.error("[Blogger Generator Error]:", error.message);
+    if (reservedPost && reservedPost.publishStatus === "generating") {
+      try {
+        await BloggerPost.deleteOne({ _id: reservedPost._id });
+        console.log(`[Blogger Generator] Cleaned up failed reservation lock: ${reservedPost._id}`);
+      } catch (cleanupErr) {
+        console.error("[Blogger Generator] Lock cleanup error:", cleanupErr.message);
+      }
+    }
     return {
       success: false,
       error: error.message,
