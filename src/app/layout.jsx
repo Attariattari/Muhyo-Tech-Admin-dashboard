@@ -1,4 +1,5 @@
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "@/app/globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -29,31 +30,28 @@ export const viewport = {
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Muhyo Tech — Admin Console Dashboard",
-    template: "%s | Muhyo Tech Admin",
+    default: "Muhyo Tech - Premium Software Engineering & Digital Solutions",
+    template: "%s | Muhyo Tech",
   },
   description:
-    "Muhyo Tech Admin Console — Management system for blogs, services, projects, users, resume, and AI automation.",
+    "Muhyo Tech builds modern websites, full-stack web apps, admin dashboards, and scalable Next.js & MERN solutions for businesses in Lahore and beyond.",
   icons: {
-    icon: [
-      { url: "/logo.png", type: "image/png" },
-      { url: "/logo.webp", type: "image/webp" },
-    ],
+    icon: [{ url: "/logo.png", type: "image/png", sizes: "640x640" }],
     shortcut: [{ url: "/logo.png", type: "image/png" }],
-    apple: [{ url: "/logo.png", type: "image/png" }],
+    apple: [{ url: "/logo.png", type: "image/png", sizes: "640x640" }],
   },
   openGraph: {
-    title: "Muhyo Tech — Admin Console Dashboard",
+    title: "Muhyo Tech - Premium Software Engineering & Digital Solutions",
     description:
-      "Muhyo Tech Admin Console — Management system for blogs, services, projects, users, resume, and AI automation.",
+      "Muhyo Tech builds modern websites, full-stack web apps, admin dashboards, and scalable Next.js & MERN solutions for businesses in Lahore and beyond.",
     url: SITE_URL,
-    siteName: "Muhyo Tech Admin",
+    siteName: "Muhyo Tech",
     images: [
       {
-        url: getSeoImage("/logo.png"),
-        width: 640,
-        height: 640,
-        alt: "Muhyo Tech Admin Logo",
+        url: getSeoImage("/home-preview.png"),
+        width: 1200,
+        height: 630,
+        alt: "Muhyo Tech",
       },
     ],
     type: "website",
@@ -64,12 +62,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/logo.png" type="image/png" />
-        <link rel="shortcut icon" href="/logo.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/logo.png" type="image/png" />
         <OrganizationSchema />
         <link rel="dns-prefetch" href="//res.cloudinary.com" />
-        <script
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
