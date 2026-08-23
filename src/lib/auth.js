@@ -492,7 +492,6 @@ export async function denyUser(email) {
             console.warn("Deny email failed.");
         }
 
-
         return { success: true };
     }
     return { success: false, message: "Identity not found." };

@@ -1,0 +1,31 @@
+{
+  "name": "Muhyo Tech Admin Console",
+  "short_name": "Muhyo Admin",
+  "description": "Executive Management & Control Center for Muhyo Tech",
+  "start_url": "/admin/blogs",
+  "scope": "/admin",
+  "display": "standalone",
+  "background_color": "#090e1a",
+  "theme_color": "#090e1a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.webp",
+      "sizes": "640x640",
+      "type": "image/webp",
+      "purpose": "any"
+    }
+  ]
+}

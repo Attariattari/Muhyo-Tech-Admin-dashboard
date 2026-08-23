@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { formatName } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
+import AdminPwaInstaller from "./AdminPwaInstaller";
 export default function Topbar() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -56,7 +57,8 @@ export default function Topbar() {
     };
 
     refreshAdminState();
-    const interval = setInterval(refreshAdminState, 5000);
+    // Gentle 60s background heartbeat (Real-time updates are handled instantly via Socket.io)
+    const interval = setInterval(refreshAdminState, 60000);
     return () => {
       cancelled = true;
       clearInterval(interval);
@@ -164,16 +166,14 @@ export default function Topbar() {
           >
             {theme === "light" ? <Moon className="w-5 h-5 text-indigo-400" /> : <Sun className="w-5 h-5 text-amber-400" />}
           </button>
-          <a
-            href="https://www.muhyotech.com"
+          <Link
+            href="/"
             target="_blank"
-            rel="noopener noreferrer"
             className="p-2.5 hover:bg-muted/60 rounded-xl text-muted-foreground hover:text-accent transition-all flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
-            title="Open Live Portfolio Website (muhyotech.com)"
           >
-            <ExternalLink className="w-4 h-4 text-accent" />
-            <span className="hidden lg:inline font-black">Live Site</span>
-          </a>
+            <ExternalLink className="w-4 h-4" />
+            <span className="hidden lg:inline">Live Site</span>
+          </Link>
         </div>
 
         <div className="relative" ref={dropdownRef}>
@@ -302,6 +302,8 @@ export default function Topbar() {
             )}
           </AnimatePresence>
         </div>
+
+        <AdminPwaInstaller session={session} isSuperAdmin={isSuperAdmin} />
 
         <Link
           href="/admin/settings"

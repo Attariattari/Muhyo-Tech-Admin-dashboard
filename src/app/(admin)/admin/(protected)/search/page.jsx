@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Search,
@@ -16,7 +16,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
-function SearchContent() {
+export default function AdminSearchPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const query = searchParams.get("q") || "";
@@ -161,17 +161,5 @@ function SearchContent() {
         )}
       </div>
     </div>
-  );
-}
-
-export default function AdminSearchPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex flex-col items-center justify-center py-32 space-y-4">
-        <div className="w-16 h-16 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
-      </div>
-    }>
-      <SearchContent />
-    </Suspense>
   );
 }

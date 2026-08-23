@@ -75,10 +75,18 @@ const ICON_MAP = {
 export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [session, setSession] = useState(null);
+  const [allowTransitions, setAllowTransitions] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [session, setSession] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAllowTransitions(true);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, []);
 
   const displayName = session?.name ? formatName(session.name) : "Admin";
   const isSuperAdmin = ["super-admin", "root-super-admin"].includes(session?.role);
@@ -125,6 +133,14 @@ export default function AdminSidebar() {
       .then((res) => res.json())
       .then((data) => setSession(data));
   }, []);
+
+  useEffect(() => {
+    const desktop = window.innerWidth >= 1024;
+    if (desktop) {
+      document.documentElement.classList.toggle("admin-sidebar-collapsed", Boolean(sidebarCollapsed));
+      document.documentElement.classList.toggle("admin-sidebar-expanded", !sidebarCollapsed);
+    }
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -248,11 +264,12 @@ export default function AdminSidebar() {
       </AnimatePresence>
 
       <motion.div
+        initial={false}
         animate={{
           width: isMobile ? 288 : sidebarCollapsed ? 80 : 288,
           x: isMobile && !sidebarOpen ? -288 : 0,
         }}
-        transition={{ type: "spring", damping: 20, stiffness: 150 }}
+        transition={allowTransitions ? { type: "spring", damping: 22, stiffness: 180 } : { duration: 0 }}
         className="admin-sidebar-shell fixed left-0 top-0 z-[70] flex h-full flex-col border-r border-border/60 bg-background shadow-2xl"
       >
         {/* Desktop Collapse / Expand Toggle Button */}
@@ -276,14 +293,8 @@ export default function AdminSidebar() {
           <div
             className="admin-sidebar-brand flex h-20 shrink-0 items-center overflow-hidden border-b border-border/60 bg-gradient-to-br from-accent/5 to-transparent px-6"
           >
-            <a
-              href="https://www.muhyotech.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 min-w-max group/brand"
-              title="Open Live Portfolio Website (muhyotech.com)"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground shadow-lg shadow-accent/20 group-hover/brand:scale-105 transition-transform">
+            <div className="flex items-center gap-3 min-w-max">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground shadow-lg shadow-accent/20">
                 <Zap className="h-6 w-6" />
               </div>
               {!isCollapsed && (
@@ -292,15 +303,15 @@ export default function AdminSidebar() {
                   animate={{ opacity: 1, x: 0 }}
                   className="flex flex-col"
                 >
-                  <span className="text-sm font-black uppercase italic leading-none tracking-widest text-foreground group-hover/brand:text-accent transition-colors flex items-center gap-1">
+                  <span className="text-sm font-black uppercase italic leading-none tracking-widest text-foreground">
                     MUHYO
                   </span>
                   <span className="text-[8px] font-bold text-muted-foreground tracking-[0.3em] uppercase leading-none mt-1">
-                    Live Website ↗
+                    Control Center
                   </span>
                 </motion.div>
               )}
-            </a>
+            </div>
 
             {/* Mobile Close Button */}
             {isMobile && (

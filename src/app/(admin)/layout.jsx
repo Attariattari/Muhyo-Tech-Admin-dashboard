@@ -1,7 +1,6 @@
 import { Montserrat } from "next/font/google";
+import "@/app/admin.css";
 import Providers from "./Providers";
-
-export const dynamic = "force-dynamic";
 
 const montserrat = Montserrat({ subsets: ["latin"] });
 
@@ -11,10 +10,21 @@ export const metadata = {
     template: "%s - Muhyo Tech Control Center",
   },
   description: "Secure dashboard for managing Muhyo Tech content.",
+  manifest: "/admin-manifest.json",
   robots: {
     index: false,
     follow: false,
+    noarchive: true,
+    nosnippet: true,
+    noimageindex: true,
     nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noarchive: true,
+      nosnippet: true,
+      noimageindex: true,
+    },
   },
 };
 
