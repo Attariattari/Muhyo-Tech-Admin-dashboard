@@ -262,3 +262,20 @@
     }
 }
 
+/* Full-Screen 404 Not Found: Completely hides Admin Sidebar, Topbar, and Chrome */
+html.not-found-active .admin-sidebar-shell,
+html.not-found-active .admin-topbar-shell,
+html.not-found-active aside,
+html.not-found-active nav {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+}
+
+html.not-found-active .admin-content-shell {
+    padding-left: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+

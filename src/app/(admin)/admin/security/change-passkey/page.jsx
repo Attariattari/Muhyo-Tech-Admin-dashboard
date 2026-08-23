@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Lock, CheckCircle, AlertCircle, Loader, KeyRound, Shield } from 'lucide-react';
@@ -12,7 +12,7 @@ const PASSKEY_STRENGTH = {
   strong: { color: 'var(--status-success)', label: 'Strong', width: '100%' },
 };
 
-export default function ChangePasskeyPage() {
+function ChangePasskeyContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -525,5 +525,14 @@ export default function ChangePasskeyPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+
+export default function ChangePasskeyPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background text-foreground"><Loader className="w-8 h-8 animate-spin text-accent" /></div>}>
+      <ChangePasskeyContent />
+    </Suspense>
   );
 }

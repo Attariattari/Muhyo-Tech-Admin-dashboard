@@ -16,7 +16,7 @@ const nextConfig = {
     },
     experimental: {
         optimizePackageImports: ["lucide-react", "framer-motion"],
-        globalNotFound: true,
+        
     },
     async headers() {
         const securityHeaders = [
@@ -156,3 +156,4 @@ const nextConfig = {
 };
 
 export default nextConfig;
+
