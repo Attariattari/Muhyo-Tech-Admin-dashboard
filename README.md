@@ -1,96 +1,288 @@
-# Muhyo Tech — Dedicated Admin Console & Management System
+# Muhyo Tech
 
-> **Standalone Administrative Control Center Decoupled from the Muhyo Tech Elite Portfolio Architecture.**
+Production portfolio, services, content, and administration platform for **Muhyo Tech**, maintained by Pir Ghulam Muhyo Din in Lahore, Pakistan.
+
+[![Website](https://img.shields.io/badge/Website-muhyotech.com-6d5dfc?style=flat-square)](https://www.muhyotech.com)
+![Next.js](https://img.shields.io/badge/Next.js-16.1.6-black?style=flat-square&logo=next.js)
+![React](https://img.shields.io/badge/React-19.2.3-149eca?style=flat-square&logo=react)
+![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47a248?style=flat-square&logo=mongodb)
+![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
+
+> Current project reference · Updated July 29, 2026
+
+## Platform overview
+
+Muhyo Tech combines a public business website with a database-backed administration system. Public content—including services, projects, articles, skills, goals, resume information, and contact details—is managed from the admin console and delivered through the Next.js App Router.
+
+The platform also includes an editorial automation system for topic planning, long-form and supporting article generation, image preparation, quality review, social sharing content, publishing, and Featured article selection.
+
+## Current capabilities
+
+### Public website
+
+- Responsive portfolio and service presentation
+- Dynamic projects, services, blog, skills, goals, resume, and contact content
+- Individual service, project, and article detail pages
+- Contact and WhatsApp inquiry paths
+- Theme-aware UI, animations, image galleries, and lightboxes
+- Canonical metadata, structured data, sitemap, robots rules, and legacy blog redirects
+- AI-readable brand information through `/llms.txt`
+
+### Administration
+
+- Central dashboard for public website content
+- Project, service, blog, profile, resume, skills, goals, and message management
+- Secure session-based admin access and account security controls
+- Google OAuth account-linking support
+- Cloudinary media upload and image management
+- Published, pending, and draft content states
+- Cache invalidation and optional real-time content events
+
+### AI editorial system
+
+- Persistent AI, manual, and fallback topic queues
+- Duplicate-aware topic validation against existing blogs and used plans
+- Pillar-first content clusters: one detailed Pillar article followed by two related Supporting articles
+- Strict parent verification that prevents Supporting generation before its Pillar blog exists
+- Detailed Pillar articles targeting complete subject coverage rather than word-count padding
+- Focused Supporting articles for narrow questions and internal topical support
+- AI quality review, retry limits, and safe failure handling
+- Topic usage tracking so completed topics are not selected again
+- Article-specific image prompts with varied visual direction and color themes
+- Image readiness and quality audit data
+- Platform-specific LinkedIn, Facebook, X, and WhatsApp post generation
+- Second-pass social editorial review for factual accuracy, tone, claims, jargon, and professionalism
+- Quality-based Featured article selection instead of automatically featuring every new post
+
+## Editorial sequence
+
+Each content cluster follows this enforced order:
+
+```text
+Detailed Pillar article
+        |
+        +--> Supporting article 1
+        |
+        +--> Supporting article 2
+        |
+        +--> Next Pillar cluster
+```
+
+A Supporting topic is eligible only when its linked Pillar topic is marked as used **and** the actual Pillar blog still exists. If no duplicate-safe Pillar topic is available, automated generation stops instead of producing an unrelated Supporting fallback.
+
+## Featured article qualification
+
+Featured placement is earned through editorial signals rather than publication date alone. The ranking process considers:
+
+- AI review status and quality score
+- Article type and appropriate content depth
+- Useful H2/H3 structure
+- SEO title, focus keyword, and description completeness
+- Lists, practical guidance, mistakes, best practices, tables, and FAQs where appropriate
+- Cover-image readiness and audit data
+- Category and topic-cluster diversity
+
+The public blog does not label ordinary recent posts as Featured when no article passes the qualification threshold.
+
+## Technology
+
+| Area | Current stack |
+| --- | --- |
+| Application | Next.js 16.1.6, React 19.2.3, App Router |
+| Styling | Tailwind CSS 4, Framer Motion |
+| Data | MongoDB, Mongoose 9 |
+| Forms and state | React Hook Form, Zustand, TanStack Query, Zod |
+| Authentication | Signed sessions with `jose`, bcrypt hashing, Google OAuth |
+| Media | Cloudinary |
+| AI | Google Generative AI integration |
+| Email | Nodemailer/SMTP |
+| Caching | Application cache with optional Redis |
+| UI utilities | Lucide, Swiper, Recharts, Sonner, dnd-kit |
+| Observability | Optional Vercel Analytics and Speed Insights |
+
+## Repository structure
+
+```text
+.
+|-- public/                         Static assets
+|-- src/
+|   |-- app/
+|   |   |-- (main)/                Public routes
+|   |   |-- (admin)/               Admin and authentication routes
+|   |   |-- api/                   APIs, cron handlers, and integrations
+|   |   |-- llms.txt/              AI-readable brand route
+|   |   |-- robots.js              Crawler policy
+|   |   `-- sitemap.js             Dynamic sitemap
+|   |-- components/                Public and admin interfaces
+|   |-- controllers/               Application business logic
+|   |-- lib/
+|   |   |-- ai/blog/               Topics, articles, images, and social content
+|   |   |-- cron/                  Scheduled pipeline orchestration
+|   |   `-- server/                Server-only helpers
+|   `-- models/                    Mongoose schemas and models
+|-- .env.sample                    Environment variable reference
+|-- package.json                   Dependencies and scripts
+`-- README.md                      Project documentation
+```
+
+## Local development
+
+Requirements:
+
+- A current Node.js LTS release
+- npm
+- MongoDB connection
+- Service credentials for the integrations being used
+
+Setup:
+
+```bash
+npm install
+copy .env.sample .env.local
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+## Commands
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Webpack development server |
+| `npm run build` | Create the production build |
+| `npm start` | Start a completed production build |
+| `npm run lint` | Run ESLint |
+| `npm run clean` | Remove `.next` on Windows |
+
+## Environment configuration
+
+Use `.env.sample` as the source of truth. Never commit `.env.local` or expose credentials in client-side code.
+
+| Group | Variables |
+| --- | --- |
+| Database | `MONGODB_URI` |
+| Application URLs | `APP_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_BASE_URL` |
+| Authentication | `AUTH_SECRET`, `SESSION_SECRET`, `AUTH_SESSION_DAYS`, `SUPER_ADMIN_EMAIL` |
+| Email | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` |
+| Google OAuth | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` |
+| Cloudinary | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` |
+| AI | `GEMINI_API_KEY`; optional model and timeout overrides |
+| Blog automation | `AUTO_PUBLISH_AI_BLOGS`, `ALLOW_PUBLISH_WITHOUT_BLOG_IMAGE`, `DEFAULT_BLOG_FALLBACK_IMAGE_URL` |
+| Image upload links | `BLOG_IMAGE_UPLOAD_SECRET`, `BLOG_IMAGE_UPLOAD_LINK_TTL_HOURS` |
+| Scheduled routes | `CRON_SECRET` |
+| Optional services | `REDIS_URL`, analytics and Socket.IO feature flags |
+
+`OPENAI_API_KEY` is present in the environment template for optional integrations; the current editorial generator uses the configured Gemini service.
+
+## Scheduled editorial operation
+
+Protected cron handlers coordinate daily blog processing and Featured ranking refreshes. Production schedulers must send the configured `CRON_SECRET`. A topic is moved through its queue states and linked to the resulting blog, allowing interrupted processing to recover without intentionally reusing a completed topic.
+
+Automated publishing behavior remains controlled by environment settings and image readiness. Failed quality checks stop or retry within bounded limits instead of silently publishing degraded content.
+
+## SEO and discovery
+
+- Dynamic sitemap and crawler rules
+- Canonical production URLs
+- Page-specific metadata and social previews
+- Organization, person, service, project, and article structured data where relevant
+- Redirects for retired duplicate blog slugs
+- `/llms.txt` for concise AI-oriented brand context
+- Admin and private API areas excluded from public discovery
+
+Production verification should include:
+
+```text
+https://www.muhyotech.com/sitemap.xml
+https://www.muhyotech.com/robots.txt
+https://www.muhyotech.com/llms.txt
+```
+
+## Deployment
+
+The application is designed for Vercel-compatible deployment.
+
+Before release:
+
+1. Configure all required production environment variables.
+2. Confirm MongoDB, Cloudinary, SMTP, OAuth, and AI credentials.
+3. Set canonical URL variables to `https://www.muhyotech.com`.
+4. Configure protected scheduled requests with `CRON_SECRET`.
+5. Verify public metadata, redirects, sitemap, robots, and `/llms.txt`.
+6. Confirm admin routes and secrets are not publicly exposed.
+
+## Adding a New Target Industry (Developer Guide)
+
+When expanding Muhyo Tech's market reach or adding a new target industry to the AI intelligence and content generation pipeline, you must update **4 core files** to ensure seamless end-to-end integration:
+
+```text
+1. industryTaxonomy.js       --> Keyword patterns & detection regex
+2. serviceTaxonomy.js        --> Controlled enum registry
+3. serviceClassificationEngine.js --> Commercial service mapping
+4. topicIntelligenceFacade.js --> AI topic & cluster generation prompt
+```
+
+### Step-by-Step Procedure:
+
+#### 1. Add Industry Keywords & Regex Matcher
+* **File Path:** [`src/lib/ai/intelligence/industryTaxonomy.js`](src/lib/ai/intelligence/industryTaxonomy.js)
+* **Target Object:** `INDUSTRY_TAXONOMY`
+* **Action:** Add the unique snake_case key, display label, and regex keyword patterns for auto-detection:
+  ```javascript
+  "new_industry_key": {
+    label: "Industry Display Label",
+    keywords: [/keyword1/i, /keyword2/i, /phrase pattern/i]
+  },
+  ```
+
+#### 2. Register in Controlled Service Enum
+* **File Path:** [`src/lib/ai/intelligence/services/serviceTaxonomy.js`](src/lib/ai/intelligence/services/serviceTaxonomy.js)
+* **Target Object:** `SERVICE_INDUSTRIES`
+* **Action:** Register the industry key and label to maintain a 1:1 match across system enums:
+  ```javascript
+  new_industry_key: { key: "new_industry_key", label: "Industry Display Label" },
+  ```
+
+#### 3. Map to Commercial Services & Positioning
+* **File Path:** [`src/lib/ai/intelligence/services/serviceClassificationEngine.js`](src/lib/ai/intelligence/services/serviceClassificationEngine.js)
+* **Target Object:** `CLASSIFICATION_PROFILES`
+* **Action:** Attach the new industry to relevant services (e.g., `custom-website-development`, `admin-dashboard-development`) so `getServicesByIndustry("new_industry_key")` returns valid conversion targets:
+  ```javascript
+  industries: [
+    { key: "new_industry_key", label: SERVICE_INDUSTRIES.new_industry_key.label, confidence: CONFIDENCE_LEVELS.HIGH, source: PROVENANCE_SOURCES.KNOWLEDGE_BASE },
+    ...
+  ]
+  ```
+
+#### 4. Update AI Cluster Generation Prompt
+* **File Path:** [`src/lib/ai/intelligence/topicIntelligenceFacade.js`](src/lib/ai/intelligence/topicIntelligenceFacade.js)
+* **Target:** `Supported Industries` line in Gemini prompt (Line ~117)
+* **Action:** Add `new_industry_key` to the comma-separated prompt list so the AI proactively originates topical authority clusters for this niche.
+
+#### 5. Automatic Graph & Validation Handling
+* [`src/lib/ai/seo/topicalAuthorityGraph.js`](src/lib/ai/seo/topicalAuthorityGraph.js) dynamically reads `Object.keys(INDUSTRY_TAXONOMY)` and automatically creates graph nodes for internal linking and topical coverage.
+* [`src/lib/ai/intelligence/topicIntelligenceValidation.js`](src/lib/ai/intelligence/topicIntelligenceValidation.js) automatically validates and normalizes the new industry keys without schema breakage.
 
 ---
 
-## 📌 Repository Overview
+## Safe dependency updates
 
-**Muhyo Tech Admin Console** is a specialized, production-ready, standalone Next.js 15 administrative management system. It provides complete operational control over all content, services, portfolio case studies, user management, and AI-assisted automation pipelines for **Muhyo Tech**.
+Dependabot proposes weekly patch and minor dependency updates in isolated pull
+requests. Review the Vercel preview and run the local production smoke test
+before manual approval. Updates never merge or deploy automatically.
 
-### 🔗 Parent Project Relationship
-- **Parent Repository**: `Muhyo Tech Elite Portfolio System`
-- **Architecture Type**: Decoupled Operations Node
-- **Purpose of Separation**: Decoupling the administrative suite from the public-facing portfolio eliminates public client overhead, isolates administrative API endpoints, improves security boundaries, and provides zero-latency content management for platform administrators.
+See [Safe Automated Dependency Updates](docs/AUTOMATED_DEPENDENCY_UPDATES.md)
+for the approval checklist, major-version policy, and rollback procedure.
 
----
+## Contact
 
-## ✨ Key Features & Capability Modules
+- Website: [muhyotech.com](https://www.muhyotech.com)
+- Contact: [muhyotech.com/contact](https://www.muhyotech.com/contact)
+- LinkedIn: [Ghulam Muhyo Din](https://www.linkedin.com/in/ghulam-muhyo-din-web-designer/)
+- GitHub: [Attariattari](https://github.com/Attariattari)
+- X: [@GhulamMuhyo](https://x.com/GhulamMuhyo)
+- Facebook: [Muhyo Tech](https://www.facebook.com/muhyotech)
 
-### 1. 📝 Editorial & AI Content Pipeline
-- **Blog Content Management**: Full lifecycle management (Create, Read, Update, Delete) for editorial articles, category tagging, read-time calculation, and canonical slug assignment.
-- **AI Editorial Planner & Automation**: Cluster-aware topic queues, pillar vs. supporting article generator powered by Gemini AI API, quality audit scoring, and automatic image alt-text generation.
-- **Image Optimization**: Automated Cloudinary media uploads with intelligent face-centered AI cropping (`g_face`) for author portraits and 16:9 aspect ratios for cover visuals.
+## Ownership
 
-### 2. 💼 Services & Portfolio Case Studies CMS
-- **Service Catalog Manager**: Manage service offerings, technical feature breakdowns, delivery processes, and service-to-article interlinking.
-- **Project Showcase Controller**: Update project details, stack tags, client testimonials, live preview links, and interactive image galleries.
-
-### 3. 👥 User Management & Access Security
-- **Identity & Authority**: Role-based access control (RBAC), user approval queues, and immutable root super-admin protection.
-- **Security & Audit Logs**: Real-time tracking of security events, client IP access logs, authentication attempt flags, and unauthorized access alerts.
-
-### 4. 📬 Client Engagement & Lead Ingestion
-- **Contact & Inquiries**: Centralized viewer for direct client inquiries, service requests, and project initiation messages.
-- **Bookings & Subscriptions**: Track client consultation requests and manage newsletter subscribers with email notifications.
-
-### 5. ⚙️ System Settings & Analytics
-- **System Configuration**: Manage site-wide SEO defaults, social links, schema metadata, and third-party API integration keys.
-- **Live Performance Telemetry**: Database connection health monitoring, index statuses, and visitor engagement summaries.
-
----
-
-## 🛠️ Technology Stack
-
-| Layer | Technology |
-|---|---|
-| **Framework** | Next.js 15+ (App Router) |
-| **UI Library & Components** | React 19, Lucide Icons, Sonner Toasts |
-| **Styling & Motion** | Tailwind CSS v4, Framer Motion |
-| **Database & ORM** | MongoDB, Mongoose |
-| **Media & Storage** | Cloudinary API, Multipart Upload Helper |
-| **AI Integration** | Google Generative AI (Gemini 2.5/3.6 Flash) |
-| **Security & Auth** | Jose JWT, BcryptJS, Custom Next.js Proxy/Middleware |
-
----
-
-## 🚀 Quick Setup & Local Execution
-
-### Prerequisites
-- Node.js `v20.9.0` or higher
-- MongoDB Database URI
-- Cloudinary Credentials (Optional for image uploads)
-
-### Installation Steps
-
-1. **Clone & Navigate**:
-   ```bash
-   git clone <repository-url>
-   cd "Muhyo Tech Admin dashboard"
-   ```
-
-2. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
-
-3. **Configure Environment Variables**:
-   Ensure `.env.local` or `.env` contains the required keys:
-   ```env
-   DATABASE_URL=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret_key
-   ROOT_SUPER_ADMIN_EMAIL=your_admin_email
-   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
-   ```
-
-4. **Launch Development Console**:
-   ```bash
-   npm run dev
-   ```
-   Open `http://localhost:3000` in your browser. The application will route directly to the **Admin Dashboard**.
-
----
-
-## 📄 License & Attribution
-
-Copyright © 2026 **Muhyo Tech** — All Rights Reserved. Proprietary software built by **Pir Ghulam Muhyo Din**.
+This repository is private and proprietary unless a separate license or repository setting states otherwise. Maintained by Muhyo Tech and Pir Ghulam Muhyo Din.
